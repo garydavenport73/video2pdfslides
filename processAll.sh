@@ -1,0 +1,1 @@
+for file in *.mp4; do python3 video2pdfslides.py "$file"; done

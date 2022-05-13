@@ -5,13 +5,13 @@ import imutils
 import shutil
 import img2pdf
 import glob
-import argparse
+import sys
 
 ############# Define constants
 
 OUTPUT_SLIDES_DIR = f"./output"
 
-FRAME_RATE = 3                   # no.of frames per second that needs to be processed, fewer the count faster the speed
+FRAME_RATE = 1                   # no.of frames per second that needs to be processed, fewer the count faster the speed
 WARMUP = FRAME_RATE              # initial number of frames to be skipped
 FGBG_HISTORY = FRAME_RATE * 15   # no.of frames in background object
 VAR_THRESHOLD = 16               # Threshold on the squared Mahalanobis distance between the pixel and the model to decide whether a pixel is well described by the background model.
@@ -54,8 +54,6 @@ def get_frames(video_path):
 
     vs.release()
  
-
-
 def detect_unique_screenshots(video_path, output_folder_screenshot_path):
     ''''''
     # Initialize fgbg a Background object with Parameters
@@ -91,7 +89,7 @@ def detect_unique_screenshots(video_path, output_folder_screenshot_path):
 
         if p_diff < MIN_PERCENT and not captured and frame_count > WARMUP:
             captured = True
-            filename = f"{screenshoots_count:03}_{round(frame_time/60, 2)}.png"
+            filename = f"{screenshoots_count:03}_{round(frame_time/60, 2)}.jpg"
 
             path = os.path.join(output_folder_screenshot_path, filename)
             print("saving {}".format(path))
@@ -121,40 +119,42 @@ def initialize_output_folder(video_path):
 
 
 def convert_screenshots_to_pdf(output_folder_screenshot_path):
-    output_pdf_path = f"{OUTPUT_SLIDES_DIR}/{video_path.rsplit('/')[-1].split('.')[0]}" + '.pdf'
+    output_pdf_path = f"./{video_path.rsplit('/')[-1].split('.')[0]}" + '.pdf'
     print('output_folder_screenshot_path', output_folder_screenshot_path)
     print('output_pdf_path', output_pdf_path)
     print('converting images to pdf..')
     with open(output_pdf_path, "wb") as f:
-        f.write(img2pdf.convert(sorted(glob.glob(f"{output_folder_screenshot_path}/*.png"))))
+        f.write(img2pdf.convert(sorted(glob.glob(f"{output_folder_screenshot_path}/*.jpg"))))
     print('Pdf Created!')
     print('pdf saved at', output_pdf_path)
 
 
 if __name__ == "__main__":
-    
-#     video_path = "./input/Test Video 2.mp4"
-#     choice = 'y'
-#     output_folder_screenshot_path = initialize_output_folder(video_path)
-    
-    
-    parser = argparse.ArgumentParser("video_path")
-    parser.add_argument("video_path", help="path of video to be converted to pdf slides", type=str)
-    args = parser.parse_args()
-    video_path = args.video_path
+    print(sys.argv)
+
+    if len(sys.argv)==1:
+        print("Please enter name of mp4 file")
+    elif len(sys.argv) == 2:
+        video_path = sys.argv[1]
+        ask = False
+    if len(sys.argv) > 2:
+        video_path = sys.argv[1]
+        ask = True
 
     print('video_path', video_path)
     output_folder_screenshot_path = initialize_output_folder(video_path)
     detect_unique_screenshots(video_path, output_folder_screenshot_path)
 
     print('Please Manually verify screenshots and delete duplicates')
-    while True:
-        choice = input("Press y to continue and n to terminate")
-        choice = choice.lower().strip()
-        if choice in ['y', 'n']:
-            break
-        else:
-            print('please enter a valid choice')
-
-    if choice == 'y':
+    if ask==True:
+        while True:
+            choice = input("Press y to continue and n to terminate:\n")
+            choice = choice.lower().strip()
+            if choice in ['y', 'n']:
+                break
+            else:
+                print('please enter a valid choice')
+        if choice == 'y':
+            convert_screenshots_to_pdf(output_folder_screenshot_path)
+    else:
         convert_screenshots_to_pdf(output_folder_screenshot_path)
